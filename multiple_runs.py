@@ -2,13 +2,17 @@ import argparse
 import subprocess
 import os
 def main(hparams):
-    for serial in range(hparams.experiments):
+    for serial in range(hparams.start_serial,hparams.end_serial+1):
 
         run_as_a_whole_command = 'python run_as_a_whole.py --dataname '+hparams.dataname+' --output_dir '+hparams.output_dir +' --spike_metric '+hparams.spike_metric+' --epochs '+str(hparams.epochs)+' --num_processors '+str(hparams.num_processors)+ ' --serial '+str(serial)
         run_as_a_whole_process = subprocess.Popen(run_as_a_whole_command)
         run_as_a_whole_process.wait()
 
         grouping_command = 'python GPFA_neuron_grouping.py --dataname '+hparams.dataname+' --output_dir '+hparams.output_dir +' --spike_metric '+hparams.spike_metric+' --epochs '+str(hparams.epochs)+' --num_processors '+str(hparams.num_processors)+ ' --serial '+str(serial)
+        grouping_process = subprocess.Popen(grouping_command)
+        grouping_process.wait()
+
+        grouping_command = 'python GPFA_neuron_grouping.py'+' --random_grouping --dataname '+hparams.dataname+' --output_dir '+hparams.output_dir +' --spike_metric '+hparams.spike_metric+' --epochs '+str(hparams.epochs)+' --num_processors '+str(hparams.num_processors)+ ' --serial '+str(serial)
         grouping_process = subprocess.Popen(grouping_command)
         grouping_process.wait()
 
@@ -24,6 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('--spike_metric', default='spikes')
     parser.add_argument('--epochs', default= 150,type=int)
     parser.add_argument('--num_processors', default=12, type=int)
-    parser.add_argument('--experiments', default=5, type=int)
+    parser.add_argument('--start_serial', default=0, type=int)
+    parser.add_argument('--end_serial', default=5, type=int)
     params = parser.parse_args()
     main(params)

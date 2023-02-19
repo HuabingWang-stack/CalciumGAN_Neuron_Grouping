@@ -78,6 +78,7 @@ def deconvolve_from_file_by_cascade(hparams, filename, return_spikes=False):
     spike_trains = utils.set_array_format(spike_trains, data_format='NWC', hparams=hparams)       
     h5_helper.write(filename, {'cascade': spike_trains})
 
+
   #infer cascade spikes on validation signals
   if h5_helper.contains(hparams.validation_cache, name='cascade'):
     validation_spike_trains = h5_helper.get(filename, name='cascade')
@@ -608,6 +609,9 @@ def main(hparams):
     if hparams.verbose:
       print('{} took {:.02f} mins'.format(info[epoch]['filename'],
                                           (end - start) / 60))
+  if hparams.spike_metric == 'cascade':
+    os.rename(os.path.join(hparams.output_dir, 'metrics','plots'),
+    os.path.join(hparams.output_dir, 'metrics','plots_cascade'))
 
 
 if __name__ == '__main__':

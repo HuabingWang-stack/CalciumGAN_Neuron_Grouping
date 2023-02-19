@@ -104,7 +104,7 @@ def infer_spikes_by_cascade(hparams,data):
         spike_prob = cascade.predict(model_name, data['signals'],model_folder="Cascade/Pretrained_models", verbosity=1)
     else:
         from tqdm import trange
-        print("Split analysis into chunks in order to fit into Colab memory.")
+        print("Split analysis into chunks in order to fit into memory.")
 
         # pre-allocate array for results
         spike_prob = np.zeros((data['signals'].shape))
@@ -232,10 +232,34 @@ def get_grouping_dict(hparams,matrix_of_spikeTrain,loading_matrix):
     json.dump(neurons_grouping_dict, open(dict_path,'w'))
     return neurons_grouping_dict
 
+def get_random_grouping_dict(hparams):
+
+    grouping_info_path = os.path.join(hparams.output_dir,hparams.dataname+'_'+hparams.spikename+'_random_'+hparams.serial)
+    dict_path = os.path.join(grouping_info_path,'grouping_dict.json')
+    max_val_grouping_info_path = os.path.join(hparams.output_dir,hparams.dataname+'_'+hparams.spikename+'_GPFA_'+hparams.serial)
+    max_val_dict_path = os.path.join(max_val_grouping_info_path,'grouping_dict.json')
+
+    if not os.path.exists(grouping_info_path):
+        os.makedirs(grouping_info_path)
+
+    if not os.path.exists(max_val_dict_path):
+        print('grouping dict created by max loading value does not exist!')
+        return None
+    with open(max_val_dict_path, 'r') as jsonfile:
+        grouping_dict_max_val =json.load(jsonfile)
+    max_neuron = max(num for arr in grouping_dict_max_val.values() for num in arr)
+    neurons_list = list(range(max_neuron+1))
+    grouping_dict = {}
+    sorted_grouping_dict_max_val = dict(sorted(grouping_dict_max_val.items()))
+    for k,v in sorted_grouping_dict_max_val.items():
+        grouping_dict[k] = neurons_list[:len(v)]
+        neurons_list = neurons_list[len(v):]
+    json.dump(grouping_dict, open(dict_path,'w'))
+    return grouping_dict
+
 def get_grouping_dict_kmeans(hparams,loading_matrix,initial_groups):
 
     grouping_info_path = os.path.join(hparams.output_dir,hparams.dataname+'_'+hparams.spikename+'_GPFA_kmeans_'+hparams.serial)
-
     dict_path = os.path.join(grouping_info_path,'grouping_dict.json')
 
     if os.path.exists(dict_path):
@@ -277,14 +301,15 @@ def get_grouping_dict_kmeans(hparams,loading_matrix,initial_groups):
     ax.set_zlabel('PC3 explained var {:.0f}%'.format(pca.explained_variance_ratio_[2]*100),fontsize=15)
     ax.set_title('PCA of loading values per-neuron',fontsize=20)
     ax.legend(fontsize=15)
-    fig.savefig(grouping_info_path+'pca_of_loading_matrix.png')
+    fig.savefig(os.path.join(grouping_info_path,'pca_of_loading_matrix.png'))
     json.dump(neurons_grouping_dict, open(dict_path,'w'))
     return neurons_grouping_dict
 
 def split_data(hparams,data,grouping_dict):
     if hparams.kmeans_cluster:
         splitted_data_path = os.path.join('dataset','raw_datas',hparams.dataname+'_'+hparams.spikename+'_GPFA_kmeans_'+hparams.serial)
-
+    elif hparams.random_grouping:
+        splitted_data_path = os.path.join('dataset','raw_datas',hparams.dataname+'_'+hparams.spikename+'_random_'+hparams.serial)
     else:
         splitted_data_path = os.path.join('dataset','raw_datas',hparams.dataname+'_'+hparams.spikename+'_GPFA_'+hparams.serial)
 
@@ -312,7 +337,8 @@ def generate_tfrecords_and_run(hparams):
 
     if hparams.kmeans_cluster:
         splitted_data_path = os.path.join('dataset','raw_datas',hparams.dataname+'_'+hparams.spikename+'_GPFA_kmeans_'+hparams.serial)
-
+    elif hparams.random_grouping:
+        splitted_data_path = os.path.join('dataset','raw_datas',hparams.dataname+'_'+hparams.spikename+'_random_'+hparams.serial)
     else:
         splitted_data_path = os.path.join('dataset','raw_datas',hparams.dataname+'_'+hparams.spikename+'_GPFA_'+hparams.serial)
 
@@ -342,11 +368,13 @@ def merge_synthetic_data(hparams,grouping_dict):
     if hparams.kmeans_cluster:
         synthetic_data_path = os.path.join(hparams.output_dir,
         hparams.dataname+'_'+hparams.spikename+'_GPFA_kmeans_'+hparams.serial)
-        merged_synthetic_data_path = os.path.join(synthetic_data_path+'_merged','generated')
+    elif hparams.random_grouping:
+         synthetic_data_path = os.path.join(hparams.output_dir,
+        hparams.dataname+'_'+hparams.spikename+'_random_'+hparams.serial)
     else:
         synthetic_data_path = os.path.join(hparams.output_dir,
         hparams.dataname+'_'+hparams.spikename+'_GPFA_'+hparams.serial)
-        merged_synthetic_data_path = os.path.join(synthetic_data_path+'_merged','generated')
+    merged_synthetic_data_path = os.path.join(synthetic_data_path+'_merged','generated')
 
     if not os.path.exists(merged_synthetic_data_path):
         os.makedirs(merged_synthetic_data_path)
@@ -402,11 +430,13 @@ def create_info_and_hparams(hparams,data):
     if hparams.kmeans_cluster:
         synthetic_data_path = os.path.join(hparams.output_dir,
         hparams.dataname+'_'+hparams.spikename+'_GPFA_kmeans_'+hparams.serial)
-        merged_synthetic_data_path = os.path.join(synthetic_data_path+'_merged')
+    elif hparams.random_grouping:
+        synthetic_data_path = os.path.join(hparams.output_dir,
+        hparams.dataname+'_'+hparams.spikename+'_random_'+hparams.serial)
     else:
         synthetic_data_path = os.path.join(hparams.output_dir,
         hparams.dataname+'_'+hparams.spikename+'_GPFA_'+hparams.serial)
-        merged_synthetic_data_path = os.path.join(synthetic_data_path+'_merged')
+    merged_synthetic_data_path = synthetic_data_path+'_merged'
 
     if hparams.epochs <= 100:
         num_of_epochs = '0'+str(hparams.epochs-1)
@@ -433,6 +463,21 @@ def create_info_and_hparams(hparams,data):
     hparams_dict['generated_dir'] = os.path.join(merged_synthetic_data_path,'generated')
     hparams_dict['validation_cache'] = os.path.join(merged_synthetic_data_path,'generated','validation.h5')
     json.dump(hparams_dict,open(os.path.join(merged_synthetic_data_path,'hparams.json'),'w'))
+
+    # if ST260_Day4_0 exists for example, we directly use signals and inferred cascade spikes from 
+    # ST260_Day4_0/generated/validation.h5
+    run_as_a_whole_validation_file = os.path.join(hparams.output_dir,hparams.dataname+'_0','generated','validation.h5')
+    if os.path.exists(run_as_a_whole_validation_file):
+       validation = h5py.File(run_as_a_whole_validation_file, 'r')
+       with h5py.File(os.path.join(merged_synthetic_data_path,'generated','validation.h5'),'a') as file:
+        del file['signals']
+        del file['spikes']
+        if 'cascade' in file.keys():
+            del file['cascade']
+        file.create_dataset('signals',shape = validation['signals'][:].shape, dtype= validation['signals'][:].dtype, data=validation['signals'][:] )
+        file.create_dataset('spikes',validation['spikes'][:].shape, dtype= validation['spikes'][:].dtype, data=validation['spikes'][:])
+        file.create_dataset('cascade',validation['cascade'][:].shape, dtype= validation['cascade'][:].dtype, data=validation['cascade'][:])
+    
     compute_metrics_command = 'python compute_metrics.py --output_dir '+merged_synthetic_data_path+' --num_neuron_plots '+str(data['signals'].shape[0])+' --num_processors '+str(hparams.num_processors) + ' --spike_metric '+str(hparams.spike_metric)
     compute_metrics =  subprocess.Popen(compute_metrics_command,shell=True)
     compute_metrics.wait()
@@ -444,6 +489,8 @@ def main(hparams):
     loading_matrix = get_GPFA_loading_matrix(hparams,matrix_of_spikeTrain,None)
     if hparams.kmeans_cluster:
         grouping_dict = get_grouping_dict_kmeans(hparams,loading_matrix,hparams.kmeans_cluster)
+    elif hparams.random_grouping:
+        grouping_dict = get_random_grouping_dict(hparams)
     else:    
         grouping_dict = get_grouping_dict(hparams,matrix_of_spikeTrain,loading_matrix)
     split_data(hparams,data,grouping_dict)
@@ -457,10 +504,11 @@ if __name__ == '__main__':
     parser.add_argument('--dataname', default='ST260_Day4')
     parser.add_argument('--output_dir', default='runs')
     parser.add_argument('--kmeans_cluster', default=0, type=int)
+    parser.add_argument('--random_grouping', action='store_true') # flaged to run random grouping as a reference group
     parser.add_argument('--spikename', default='cascade')
     parser.add_argument('--spike_metric', default='spikes')
     parser.add_argument('--serial', default='0') # append str to the run results's folder name to identify the run
     parser.add_argument('--epochs', default= 150 ,type=int)
-    parser.add_argument('--num_processors', default=6, type=int)
+    parser.add_argument('--num_processors', default=12, type=int)
     params = parser.parse_args()
     main(params)
