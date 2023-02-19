@@ -13,8 +13,11 @@ check_requirements() {
     Linux)
       printf 'Installing on Linux...'
       ;;
+    Windows)
+      printf 'Installing on Windows...'
+      ;;
     *)
-      printf 'Only Linux and macOS systems are currently supported.'
+      printf 'Only Linux, macOS and Windows systems are currently supported.'
       exit 1
       ;;
   esac
@@ -23,6 +26,18 @@ check_requirements() {
 install_python_packages() {
   printf '\nInstall Python packages\n'
   python3 -m pip install -r requirements.txt
+  case "$(uname -s)" in
+  Linux|Darwin)
+    python3 -m pip install cvxpy==1.1.20
+    ;;
+  Windows)
+    python3 -m pip install cvxpy==1.0.26
+    ;;
+  *)
+    printf 'Only Linux, macOS and Windows systems are currently supported.'
+    exit 1
+    ;;
+  esac
 }
 
 install_oasis() {
