@@ -1,0 +1,13 @@
+tqdm
+matplotlib==3.2.2
+scikit-learn==1.0.2
+scipy==1.4.1
+cython==0.29.14
+cvxpy==1.0.26
+jupyter
+jupyterlab
+jupyter_http_over_ws
+seaborn==0.10.1
+memory_profiler
+tensorflow==2.7.0
+json5==0.9.11

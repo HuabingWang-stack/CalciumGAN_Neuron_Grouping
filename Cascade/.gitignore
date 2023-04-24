@@ -1,0 +1,6 @@
+# locally cached files
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*.eggs/
+*.egg-info/
